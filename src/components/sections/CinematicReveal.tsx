@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { EyebrowBadge } from "@/components/ui/EyebrowBadge";
 import { HudFrame } from "@/components/ui/HudFrame";
+import { loadFrameSequence } from "@/lib/frame-loader";
+import { frameForProgress, prefersReducedMotion } from "@/lib/motion";
 import { BEATS, CINE_FRAME_COUNT, cineFramePath } from "@/lib/cinematic";
 
 export function CinematicReveal() {
@@ -19,43 +21,51 @@ export function CinematicReveal() {
   const loadedRef = useRef(false);
   const lastFrameRef = useRef(-1);
   const prevVisibleIdsRef = useRef("");
+  const reducedRef = useRef(false);
 
   const [loadProgress, setLoadProgress] = useState(0);
   const [loaded, setLoaded] = useState(false);
   const [visibleBeats, setVisibleBeats] = useState<Set<string>>(new Set());
 
+  // Start loading only once the section is within ~1.5 viewports, so the
+  // hero's sequence is not competing with this one on first paint.
   useEffect(() => {
-    let cancelled = false;
-    let loadedCount = 0;
-    const imgs: HTMLImageElement[] = [];
+    reducedRef.current = prefersReducedMotion();
+    const section = sectionRef.current;
+    let seq: ReturnType<typeof loadFrameSequence> | null = null;
 
-    for (let i = 1; i <= CINE_FRAME_COUNT; i++) {
-      const img = new Image();
-      img.src = cineFramePath(i);
-      img.onload = () => {
-        if (cancelled) return;
-        loadedCount++;
-        setLoadProgress(loadedCount / CINE_FRAME_COUNT);
-        if (loadedCount === CINE_FRAME_COUNT) {
+    const start = () => {
+      if (seq) return;
+      seq = loadFrameSequence({
+        count: CINE_FRAME_COUNT,
+        path: cineFramePath,
+        reduced: reducedRef.current,
+        onProgress: (n, total) => setLoadProgress(n / total),
+        onDone: () => {
           loadedRef.current = true;
           setLoaded(true);
-        }
-      };
-      img.onerror = () => {
-        if (cancelled) return;
-        loadedCount++;
-        setLoadProgress(loadedCount / CINE_FRAME_COUNT);
-        if (loadedCount === CINE_FRAME_COUNT) {
-          loadedRef.current = true;
-          setLoaded(true);
-        }
-      };
-      imgs.push(img);
+        },
+      });
+      framesRef.current = seq.frames;
+    };
+
+    if (!section || typeof IntersectionObserver === "undefined") {
+      start();
+      return () => seq?.cancel();
     }
-    framesRef.current = imgs;
-
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          start();
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "150% 0px" },
+    );
+    observer.observe(section);
     return () => {
-      cancelled = true;
+      observer.disconnect();
+      seq?.cancel();
     };
   }, []);
 
@@ -112,8 +122,9 @@ export function CinematicReveal() {
 
   useEffect(() => {
     if (!loaded) return;
-    drawFrame(0);
-    lastFrameRef.current = 0;
+    const first = frameForProgress(0, CINE_FRAME_COUNT, reducedRef.current);
+    drawFrame(first);
+    lastFrameRef.current = first;
   }, [loaded, drawFrame]);
 
   useEffect(() => {
@@ -133,10 +144,7 @@ export function CinematicReveal() {
             ? 0
             : Math.min(1, Math.max(0, -rect.top / scrollable));
 
-        const frameIndex = Math.min(
-          CINE_FRAME_COUNT - 1,
-          Math.floor(progress * CINE_FRAME_COUNT),
-        );
+        const frameIndex = frameForProgress(progress, CINE_FRAME_COUNT, reducedRef.current);
         if (frameIndex !== lastFrameRef.current) {
           lastFrameRef.current = frameIndex;
           drawFrame(frameIndex);
@@ -223,7 +231,7 @@ export function CinematicReveal() {
         </div>
 
         <div className="pointer-events-none absolute right-6 top-28 z-10 flex max-w-[46ch] flex-col items-end gap-5 text-right md:right-12 md:top-32">
-          <EyebrowBadge>TITAN II // FINAL FRAME</EyebrowBadge>
+          <EyebrowBadge>AVENGERS COMPOUND // FINAL FRAME</EyebrowBadge>
           <div className="relative self-stretch">
             <h2
               ref={h2InevitableRef}
@@ -245,7 +253,7 @@ export function CinematicReveal() {
             </h2>
           </div>
           <p className="max-w-[42ch] font-sans text-sm leading-relaxed text-zinc-400 md:text-base">
-            Endgame &mdash; the snap heard across the universe. J.A.R.V.I.S. held the last frame so we could rebuild from it.
+            Endgame &mdash; the snap heard across the universe. F.R.I.D.A.Y. held the last frame so we could rebuild from it.
           </p>
         </div>
 
@@ -278,8 +286,8 @@ export function CinematicReveal() {
             />
           </div>
           <div className="mx-6 flex items-center justify-between pb-4 font-mono text-[10px] uppercase tracking-[0.28em] text-zinc-500 md:mx-10">
-            <span>MARK III // ARCHIVE</span>
-            <span>J.A.R.V.I.S. // PLAYBACK</span>
+            <span>MARK LXXXV // ARCHIVE</span>
+            <span>F.R.I.D.A.Y. // PLAYBACK</span>
             <span>Scroll &darr;</span>
           </div>
         </div>

@@ -1,22 +1,27 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+// Same Geist Sans / Geist Mono families as before, but bundled from the `geist`
+// package (already a dependency) instead of fetched from Google Fonts at build
+// time. The CSS variables (--font-geist-sans / --font-geist-mono) are unchanged.
+import { GeistSans } from "geist/font/sans";
+import { GeistMono } from "geist/font/mono";
+// Geist Pixel (also bundled in the `geist` package) is used only by the
+// companion's retro J.A.R.V.I.S. terminal / quiz HUD.
+import { GeistPixelSquare } from "geist/font/pixel";
 import "./globals.css";
 import { SmoothScrollProvider } from "@/components/providers/SmoothScrollProvider";
+import { StarkCompanion } from "@/components/companion/StarkCompanion";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const geistSans = GeistSans;
+const geistMono = GeistMono;
+const geistPixel = GeistPixelSquare;
 
 export const metadata: Metadata = {
-  title: "Stark Industries — Mark LXXXV",
+  title: {
+    default: "Stark Industries — Mark LXXXV",
+    template: "%s",
+  },
   description:
-    "Arc reactor online. J.A.R.V.I.S. standing by. Scroll to engage the Mark LXXXV.",
+    "Arc reactor online. F.R.I.D.A.Y. standing by. Scroll to engage the Mark LXXXV.",
   metadataBase: new URL("http://localhost:3000"),
 };
 
@@ -26,10 +31,14 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${geistPixel.variable} h-full antialiased`}
     >
       <body className="relative min-h-full bg-background text-foreground grain">
-        <SmoothScrollProvider>{children}</SmoothScrollProvider>
+        <SmoothScrollProvider>
+          {children}
+          {/* Retro pixel Iron Man pet + J.A.R.V.I.S. terminal, on every route. */}
+          <StarkCompanion />
+        </SmoothScrollProvider>
       </body>
     </html>
   );

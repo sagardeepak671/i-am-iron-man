@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { EyebrowBadge } from "@/components/ui/EyebrowBadge";
 import { HudFrame } from "@/components/ui/HudFrame";
+import { loadFrameSequence } from "@/lib/frame-loader";
+import { frameForProgress, prefersReducedMotion } from "@/lib/motion";
 import { DIALOGUES, FRAME_COUNT, HERO_TEXT_FADE_END, framePath } from "@/lib/hero";
 
 export function Hero() {
@@ -18,44 +20,26 @@ export function Hero() {
   const loadedRef = useRef(false);
   const lastFrameRef = useRef(-1);
   const prevVisibleIdsRef = useRef("");
+  const reducedRef = useRef(false);
 
   const [loadProgress, setLoadProgress] = useState(0);
   const [loaded, setLoaded] = useState(false);
   const [visibleCards, setVisibleCards] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    let cancelled = false;
-    let loadedCount = 0;
-    const imgs: HTMLImageElement[] = [];
-
-    for (let i = 1; i <= FRAME_COUNT; i++) {
-      const img = new Image();
-      img.src = framePath(i);
-      img.onload = () => {
-        if (cancelled) return;
-        loadedCount++;
-        setLoadProgress(loadedCount / FRAME_COUNT);
-        if (loadedCount === FRAME_COUNT) {
-          loadedRef.current = true;
-          setLoaded(true);
-        }
-      };
-      img.onerror = () => {
-        if (cancelled) return;
-        loadedCount++;
-        setLoadProgress(loadedCount / FRAME_COUNT);
-        if (loadedCount === FRAME_COUNT) {
-          loadedRef.current = true;
-          setLoaded(true);
-        }
-      };
-      imgs.push(img);
-    }
-    framesRef.current = imgs;
-
-    return () => {
-      cancelled = true;
-    };
+    reducedRef.current = prefersReducedMotion();
+    const seq = loadFrameSequence({
+      count: FRAME_COUNT,
+      path: framePath,
+      reduced: reducedRef.current,
+      onProgress: (n, total) => setLoadProgress(n / total),
+      onDone: () => {
+        loadedRef.current = true;
+        setLoaded(true);
+      },
+    });
+    framesRef.current = seq.frames;
+    return () => seq.cancel();
   }, []);
 
   const drawFrame = useCallback((index: number) => {
@@ -113,8 +97,9 @@ export function Hero() {
 
   useEffect(() => {
     if (!loaded) return;
-    drawFrame(0);
-    lastFrameRef.current = 0;
+    const first = frameForProgress(0, FRAME_COUNT, reducedRef.current);
+    drawFrame(first);
+    lastFrameRef.current = first;
   }, [loaded, drawFrame]);
 
   useEffect(() => {
@@ -134,10 +119,7 @@ export function Hero() {
             ? 0
             : Math.min(1, Math.max(0, -rect.top / scrollable));
 
-        const frameIndex = Math.min(
-          FRAME_COUNT - 1,
-          Math.floor(progress * FRAME_COUNT),
-        );
+        const frameIndex = frameForProgress(progress, FRAME_COUNT, reducedRef.current);
         if (frameIndex !== lastFrameRef.current) {
           lastFrameRef.current = frameIndex;
           drawFrame(frameIndex);
@@ -226,8 +208,8 @@ export function Hero() {
             <span className="text-accent">Iron Man.</span>
           </h1>
           <p className="max-w-[42ch] font-sans text-sm leading-relaxed text-zinc-400 md:text-base">
-            Mark LXXXV nanotech suit. Arc reactor calibrated. Scroll to run a full
-            system diagnostic — J.A.R.V.I.S. is holding on the line.
+            Mark LXXXV nanotech suit. Scroll to run a full system
+            diagnostic — F.R.I.D.A.Y. is holding on the line.
           </p>
         </div>
 
@@ -243,7 +225,7 @@ export function Hero() {
           <h2 className="font-sans font-semibold leading-[0.88] tracking-tighter text-foreground text-[clamp(4rem,9.5vw,9rem)]">
             Build
             <br />
-            with <span className="text-accent">Devini</span>
+            with <span className="text-accent">Precision</span>
           </h2>
           <p className="max-w-[36ch] font-mono text-[11px] uppercase tracking-[0.22em] text-zinc-400">
             Interfaces &amp; products, engineered like the Mark LXXXV.
@@ -253,16 +235,17 @@ export function Hero() {
         <div className="pointer-events-none absolute left-6 top-20 z-10 flex items-center gap-2 md:left-10 md:top-24">
           <div className="h-px w-8 bg-accent/60" />
           <span className="font-mono text-[10px] uppercase tracking-[0.32em] text-zinc-400">
-            Telemetry Link &mdash; Live
+            Interface Sim &mdash; Not Film Data
           </span>
         </div>
 
         <div className="pointer-events-none absolute right-6 top-20 z-10 flex items-center gap-3 md:right-10 md:top-24">
           <span className="font-mono text-[10px] uppercase tracking-[0.32em] text-zinc-400">
-            Arc Reactor
+            Arc Reactor (sim)
           </span>
           <span
             ref={powerReadoutRef}
+            title="Simulated interface animation — no reactor percentage is stated in the films" 
             className="font-mono text-[10px] uppercase tracking-[0.22em] text-accent"
           >
             87.3%
@@ -280,7 +263,7 @@ export function Hero() {
           </div>
           <div className="mx-6 flex items-center justify-between pb-4 font-mono text-[10px] uppercase tracking-[0.28em] text-zinc-500 md:mx-10">
             <span>SEQ 001 / 169</span>
-            <span>J.A.R.V.I.S. // DIAGNOSTIC</span>
+            <span>F.R.I.D.A.Y. // DIAGNOSTIC</span>
             <span>Scroll &darr;</span>
           </div>
         </div>

@@ -1,4 +1,19 @@
+import Link from "next/link";
 import { ArrowUpRight } from "@phosphor-icons/react/dist/ssr";
+import { getArmor } from "@/data/archive";
+
+/**
+ * Footer quick links to armor detail pages. Notes are the location of each
+ * armor's defining scene.
+ */
+const FOOTER_ARMORS: { id: string; note: string }[] = [
+  { id: "mark-i", note: "Cave, Afghanistan" },
+  { id: "mark-iii", note: "Gulmira" },
+  { id: "mark-vii", note: "Stark Tower" },
+  { id: "mark-xliv", note: "Hulkbuster" },
+  { id: "mark-l", note: "Titan" },
+  { id: "mark-lxxxv", note: "Avengers Compound" },
+];
 
 export function Footer() {
   return (
@@ -23,21 +38,14 @@ export function Footer() {
           </div>
 
           <nav className="grid grid-cols-2 gap-x-10 gap-y-3 md:grid-cols-3">
-            {[
-              ["Mark I", "Cave, Afghanistan"],
-              ["Mark III", "Monaco Circuit"],
-              ["Mark VII", "Stark Tower"],
-              ["Mark XLIV", "Hulkbuster"],
-              ["Mark L", "Titan"],
-              ["Mark LXXXV", "Endgame"],
-            ].map(([name, note]) => (
-              <a
-                key={name}
-                href="#"
+            {FOOTER_ARMORS.map(({ id, note }) => (
+              <Link
+                key={id}
+                href={`/armors/${id}`}
                 className="group flex flex-col gap-1"
               >
                 <span className="font-sans text-[13px] font-medium text-foreground transition-colors group-hover:text-accent">
-                  {name}
+                  {getArmor(id)?.designation ?? id}
                   <ArrowUpRight
                     size={11}
                     weight="bold"
@@ -47,13 +55,13 @@ export function Footer() {
                 <span className="font-mono text-[10px] uppercase tracking-[0.24em] text-zinc-500">
                   {note}
                 </span>
-              </a>
+              </Link>
             ))}
           </nav>
         </div>
 
         <div className="flex flex-col gap-2 border-t border-white/5 pt-6 font-mono text-[10px] uppercase tracking-[0.28em] text-zinc-500 md:flex-row md:items-center md:justify-between">
-          <span>Build 2026.04.21 &nbsp;&middot;&nbsp; Mark LXXXV &nbsp;&middot;&nbsp; J.A.R.V.I.S. Online</span>
+          <span>Build 2026.04.21 &nbsp;&middot;&nbsp; Mark LXXXV &nbsp;&middot;&nbsp; F.R.I.D.A.Y. Online</span>
           <span>Proof of concept &mdash; fan art, no commercial use</span>
         </div>
       </div>

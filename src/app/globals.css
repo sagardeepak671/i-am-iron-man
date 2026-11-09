@@ -19,6 +19,7 @@
   --color-accent-soft: var(--accent-soft);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-pixel: var(--font-geist-pixel-square);
 }
 
 html,
@@ -80,3 +81,1660 @@ body {
   mix-blend-mode: overlay;
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
 }
+
+/* Keyboard focus: consistent, visible ring on every interactive element. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.sr-only-focusable:not(:focus):not(:focus-visible) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Native selects on the dark theme */
+select.hud-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' fill='none' stroke='%23d4a22f' stroke-width='1.5'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+select.hud-select option {
+  background: #111113;
+  color: #e4e4e7;
+}
+
+/* Suit diagram (SuitExplorer) — selectable regions */
+.suit-part {
+  cursor: pointer;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.suit-part > rect,
+.suit-part > circle {
+  fill: rgba(212, 162, 47, 0.08);
+  stroke: rgba(212, 162, 47, 0.55);
+  stroke-width: 1.5;
+  transition: fill 160ms ease, stroke 160ms ease;
+}
+.suit-part .suit-part__detail {
+  fill: none;
+  stroke: rgba(212, 162, 47, 0.5);
+  stroke-width: 1.25;
+  pointer-events: none; /* decoration: hits go to the region shape */
+}
+.suit-part__lead,
+.suit-part__label {
+  pointer-events: none;
+}
+.suit-part__lead {
+  stroke: rgba(255, 255, 255, 0.22);
+  stroke-width: 1;
+}
+.suit-part__label {
+  fill: #a1a1aa;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  transition: fill 160ms ease;
+}
+.suit-part:hover > rect,
+.suit-part:hover > circle {
+  fill: rgba(212, 162, 47, 0.16);
+  stroke: #d4a22f;
+}
+.suit-part:hover .suit-part__label {
+  fill: #e4e4e7;
+}
+.suit-part[data-selected="true"] > rect,
+.suit-part[data-selected="true"] > circle {
+  fill: rgba(212, 162, 47, 0.24);
+  stroke: #d4a22f;
+  stroke-width: 2;
+  filter: drop-shadow(0 0 6px rgba(212, 162, 47, 0.55));
+}
+.suit-part[data-selected="true"] .suit-part__label {
+  fill: #d4a22f;
+}
+.suit-part[data-selected="true"] .suit-part__lead {
+  stroke: rgba(212, 162, 47, 0.7);
+}
+/* Visible keyboard focus: thick dashed ring around every shape in the group */
+.suit-part:focus-visible > rect,
+.suit-part:focus-visible > circle {
+  stroke: #ffffff;
+  stroke-width: 2.5;
+  stroke-dasharray: 4 3;
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.55));
+}
+.suit-part:focus-visible .suit-part__label {
+  fill: #ffffff;
+}
+@supports not selector(:focus-visible) {
+  .suit-part:focus > rect,
+  .suit-part:focus > circle {
+    stroke: #ffffff;
+    stroke-width: 2.5;
+    stroke-dasharray: 4 3;
+  }
+}
+
+/* Reduced motion: no transitions/animations, native scrolling. Scroll-scrubbed
+   frame sequences also pin to a single frame (see src/lib/motion.ts). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ==========================================================================
+   Stark companion — retro pixel Iron Man (src/components/companion)
+   ========================================================================== */
+
+/* Fixed anchor. `--companion-lift` is set from JS: height of a fixed bottom
+   tray and/or the distance needed to perch on top of the footer. */
+.companion-root {
+  position: fixed;
+  right: 16px;
+  bottom: calc(16px + var(--companion-lift, 0px));
+  z-index: 45;
+  animation: companion-arrive 900ms cubic-bezier(0.22, 0.9, 0.3, 1.05) both;
+  /* lift changes (footer perch, stepping over a control) ease instead of snapping */
+  transition: bottom 240ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+@media (min-width: 768px) {
+  .companion-root {
+    right: 24px;
+    bottom: calc(24px + var(--companion-lift, 0px));
+  }
+}
+@keyframes companion-arrive {
+  from {
+    opacity: 0;
+    transform: translate(72px, 12px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(0, 0);
+  }
+}
+
+/* While a home-page cinematic is pinned: fly into the HUD corner bracket
+   (offsets mirror COMPANION_TUCK in src/lib/companion.ts). On desktop he
+   also powers down to 72% so he stays clear of the hero's dialogue cards. */
+.companion-tuck {
+  transform-origin: 100% 100%;
+  transition: transform 700ms cubic-bezier(0.22, 0.9, 0.3, 1.05);
+}
+/* Mobile: the bottom strip wraps, so park small between the "Scroll ↓"
+   label and the hero copy (1 / 0.62 counter-scale keeps the bubble legible). */
+.companion-root[data-tucked="true"] .companion-tuck {
+  transform: translate(-8px, -32px) scale(0.62);
+}
+.companion-root[data-tucked="true"] .companion-bubble {
+  scale: 1.613;
+  transform-origin: 100% 100%;
+}
+@media (min-width: 768px) {
+  .companion-root[data-tucked="true"] .companion-tuck {
+    transform: translate(-20px, -44px) scale(0.72);
+  }
+  .companion-root[data-tucked="true"] .companion-bubble {
+    scale: 1.389;
+  }
+}
+
+/* Constant hover */
+.companion-hover {
+  animation: companion-hover 3.2s ease-in-out infinite;
+}
+@keyframes companion-hover {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.companion-button {
+  display: block;
+  padding: 2px;
+  border: 0;
+  background: transparent;
+  cursor: grab;
+  touch-action: none; /* finger-drag moves him instead of scrolling */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.55));
+  transition: transform 180ms ease, filter 180ms ease;
+}
+.companion-button:hover,
+.companion-button:focus-visible {
+  transform: scale(1.06);
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.6))
+    drop-shadow(0 0 10px rgba(212, 162, 47, 0.35));
+}
+.companion-button:active {
+  transform: scale(0.98);
+}
+.companion-root[data-mode="drag"] .companion-button {
+  cursor: grabbing;
+  transform: scale(1.04);
+}
+.companion-button:focus-visible {
+  outline-offset: 6px;
+}
+.companion-root[data-open="true"] .companion-button {
+  filter: drop-shadow(0 0 14px rgba(212, 162, 47, 0.55));
+}
+
+.companion-sprite {
+  display: block;
+  width: 42px;
+  height: 72px;
+  image-rendering: pixelated;
+}
+@media (min-width: 768px) {
+  .companion-sprite {
+    width: 46px;
+    height: 79px;
+  }
+}
+
+/* Thrusters: two frames flickered with step timing (pixel-animation feel).
+   Frame B is hidden at rest so reduced motion leaves a single static flame. */
+.px-flame-a {
+  animation: companion-flame-a 0.34s steps(1) infinite;
+}
+.px-flame-b {
+  opacity: 0;
+  animation: companion-flame-b 0.34s steps(1) infinite;
+}
+@keyframes companion-flame-a {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes companion-flame-b {
+  0%,
+  49% {
+    opacity: 0;
+  }
+  50%,
+  100% {
+    opacity: 1;
+  }
+}
+.px-flames {
+  transform-box: fill-box;
+  transform-origin: 50% 0;
+  transition:
+    transform 200ms ease,
+    opacity 300ms ease;
+}
+
+/* Eyes / reactor / palms breathe */
+.px-glow {
+  animation: companion-glow 2.6s ease-in-out infinite;
+}
+@keyframes companion-glow {
+  0%,
+  100% {
+    opacity: 0.72;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Idle actions (data-action is set for the action's duration, then cleared) */
+.companion-root[data-action="boost"] .companion-action {
+  animation: companion-boost 900ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+.companion-root[data-action="boost"] .px-flames {
+  transform: scaleY(1.7);
+}
+@keyframes companion-boost {
+  0% {
+    transform: translateY(0);
+  }
+  35% {
+    transform: translateY(-16px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+.companion-root[data-action="sway"] .companion-action {
+  animation: companion-sway 1200ms ease-in-out;
+  transform-origin: 50% 80%;
+}
+@keyframes companion-sway {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-7deg);
+  }
+  75% {
+    transform: rotate(7deg);
+  }
+}
+.companion-root[data-action="blink"] .px-eyes {
+  animation: companion-blink 360ms steps(1);
+}
+@keyframes companion-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  30%,
+  70% {
+    opacity: 0.12;
+  }
+}
+.companion-root[data-action="scan"] .px-eyes {
+  animation: companion-scan 1100ms steps(1);
+}
+@keyframes companion-scan {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-1px);
+  }
+  65% {
+    transform: translateX(1px);
+  }
+}
+
+/* Roaming: offset from the home anchor; the inline transition is the flight */
+.companion-roam {
+  will-change: transform;
+}
+/* Tilt while flying / being dragged (set from JS as --bank) */
+.companion-bank {
+  transform: rotate(var(--bank, 0deg));
+  transition: transform 380ms ease;
+}
+
+/* Modes ------------------------------------------------------------ */
+.companion-root[data-mode="fly"] .px-flames {
+  transform: scaleY(1.8);
+}
+.companion-root[data-mode="drag"] .px-flames {
+  transform: scaleY(1.35);
+}
+/* Resting: thrusters off, slower breathing, eyes dimmed, a few z's */
+.companion-root[data-mode="rest"] .px-flames {
+  opacity: 0;
+}
+.companion-root[data-mode="rest"] .companion-hover {
+  animation: companion-rest 4.2s ease-in-out infinite;
+}
+@keyframes companion-rest {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-1.5px);
+  }
+}
+.companion-root[data-mode="rest"] .px-eyes {
+  animation: companion-doze 3.4s ease-in-out infinite;
+}
+@keyframes companion-doze {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 0.2;
+  }
+}
+.companion-zzz {
+  position: absolute;
+  left: calc(100% - 6px);
+  bottom: calc(100% - 22px);
+  display: none;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 600;
+  color: #e4e4e7;
+  text-shadow: 0 0 6px rgba(212, 162, 47, 0.6);
+  pointer-events: none;
+}
+.companion-root[data-mode="rest"] .companion-zzz {
+  display: block;
+}
+.companion-zzz span {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  opacity: 0;
+  animation: companion-zzz 3s ease-out infinite;
+}
+.companion-zzz span:nth-child(2) {
+  animation-delay: 1s;
+}
+.companion-zzz span:nth-child(3) {
+  animation-delay: 2s;
+}
+@keyframes companion-zzz {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.8);
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(10px, -22px) scale(1.2);
+  }
+}
+
+/* One-off actions --------------------------------------------------- */
+.companion-root[data-action="land"] .companion-action {
+  animation: companion-land 520ms cubic-bezier(0.2, 0.8, 0.3, 1);
+  transform-origin: 50% 100%;
+}
+@keyframes companion-land {
+  0% {
+    transform: scale(1, 1);
+  }
+  30% {
+    transform: scale(1.12, 0.86);
+  }
+  65% {
+    transform: scale(0.96, 1.05);
+  }
+  100% {
+    transform: scale(1, 1);
+  }
+}
+.companion-root[data-action="spin"] .companion-action {
+  animation: companion-spin 900ms cubic-bezier(0.3, 0.1, 0.2, 1);
+}
+@keyframes companion-spin {
+  0% {
+    transform: rotate(0deg) translateY(0);
+  }
+  50% {
+    transform: rotate(180deg) translateY(-10px);
+  }
+  100% {
+    transform: rotate(360deg) translateY(0);
+  }
+}
+.companion-root[data-action="peek"] .companion-action {
+  animation: companion-peek 1400ms ease-in-out;
+  transform-origin: 50% 90%;
+}
+@keyframes companion-peek {
+  0%,
+  100% {
+    transform: translateX(0) rotate(0deg);
+  }
+  30%,
+  70% {
+    transform: translateX(-12px) rotate(-10deg);
+  }
+}
+.companion-root[data-action="shake"] .companion-action {
+  animation: companion-shake 700ms ease-in-out;
+}
+@keyframes companion-shake {
+  0%,
+  100% {
+    transform: translateX(0) rotate(0);
+  }
+  20% {
+    transform: translateX(-4px) rotate(-5deg);
+  }
+  40% {
+    transform: translateX(4px) rotate(5deg);
+  }
+  60% {
+    transform: translateX(-3px) rotate(-3deg);
+  }
+  80% {
+    transform: translateX(3px) rotate(3deg);
+  }
+}
+
+/* Thought bubble: retro box with a stepped tail, above-left of the sprite */
+.companion-bubble {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 10px);
+  width: max-content;
+  max-width: min(220px, calc(100vw - 40px));
+  padding: 8px 10px;
+  border: 1px solid rgba(212, 162, 47, 0.55);
+  background: rgba(10, 10, 11, 0.94);
+  color: #e4e4e7;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 10px;
+  line-height: 1.5;
+  letter-spacing: 0.08em;
+  text-align: left;
+  cursor: pointer;
+  box-shadow:
+    3px 3px 0 rgba(0, 0, 0, 0.55),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  animation: companion-bubble-in 220ms steps(3) both;
+}
+.companion-bubble::after,
+.companion-bubble::before {
+  content: "";
+  position: absolute;
+  right: 14px;
+  top: 100%;
+  width: 6px;
+  height: 6px;
+  background: rgba(10, 10, 11, 0.94);
+  border: 1px solid rgba(212, 162, 47, 0.55);
+  border-top: 0;
+}
+.companion-bubble::before {
+  right: 8px;
+  top: calc(100% + 5px);
+  width: 4px;
+  height: 4px;
+}
+@keyframes companion-bubble-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+/* Bubble flips to stay on screen when he is near the left or top edge */
+.companion-root[data-bubble-side="left"] .companion-bubble {
+  right: auto;
+  left: 0;
+}
+.companion-root[data-bubble-side="left"] .companion-bubble::after {
+  right: auto;
+  left: 14px;
+}
+.companion-root[data-bubble-side="left"] .companion-bubble::before {
+  right: auto;
+  left: 8px;
+}
+.companion-root[data-bubble-vertical="below"] .companion-bubble {
+  bottom: auto;
+  top: calc(100% + 10px);
+}
+.companion-root[data-bubble-vertical="below"] .companion-bubble::after,
+.companion-root[data-bubble-vertical="below"] .companion-bubble::before {
+  top: auto;
+  bottom: 100%;
+  border-top: 1px solid rgba(212, 162, 47, 0.55);
+  border-bottom: 0;
+}
+.companion-root[data-bubble-vertical="below"] .companion-bubble::before {
+  bottom: calc(100% + 5px);
+}
+.companion-root[data-tucked="true"] .companion-bubble,
+.companion-root[data-bubble-side="left"][data-tucked="true"] .companion-bubble {
+  transform-origin: 100% 100%;
+}
+
+/* ==========================================================================
+   J.A.R.V.I.S. terminal window — 8-bit game screen
+   ========================================================================== */
+
+.font-pixel {
+  font-family: var(--font-geist-pixel-square), var(--font-geist-mono), ui-monospace, monospace;
+  -webkit-font-smoothing: none;
+  font-smooth: never;
+}
+
+/* Stacked hard-edged shadows = a chunky pixel frame (no blur, no radius) */
+.jarvis-window {
+  background: #0b0b0d;
+  border: 0;
+  border-radius: 0;
+  box-shadow:
+    0 0 0 2px #0a0a0b,
+    0 0 0 5px var(--accent),
+    0 0 0 7px #0a0a0b,
+    0 0 0 9px rgba(212, 162, 47, 0.3),
+    0 22px 0 -4px rgba(0, 0, 0, 0.55),
+    0 40px 90px -20px rgba(0, 0, 0, 0.9);
+}
+.jarvis-titlebar {
+  border-bottom: 3px solid var(--accent);
+  background-color: #15120b;
+  background-image: repeating-linear-gradient(90deg, rgba(212, 162, 47, 0.12) 0 4px, transparent 4px 8px);
+  background-size: 8px 4px;
+  background-repeat: repeat-x;
+}
+.jarvis-statusbar {
+  border-top: 3px solid rgba(212, 162, 47, 0.35);
+  background: #0f0e0c;
+}
+.jarvis-body {
+  background: #08090f;
+}
+.jarvis-dot {
+  animation: jarvis-blink 1.4s steps(2) infinite;
+}
+@keyframes jarvis-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.2;
+  }
+}
+
+/* Shared focus ring for pixel controls: white pixel outline, always visible */
+.px-close:focus-visible,
+.px-btn:focus-visible,
+.px-toggle:focus-visible,
+.px-link:focus-visible {
+  outline: 3px solid #ffffff;
+  outline-offset: 3px;
+  border-radius: 0;
+}
+
+/* Pixel close button (40px touch target) */
+.px-close {
+  display: inline-flex;
+  height: 40px;
+  width: 40px;
+  align-items: center;
+  justify-content: center;
+  background: #1a1510;
+  color: #e4e4e7;
+  box-shadow:
+    inset 0 0 0 2px #0a0a0b,
+    inset 0 0 0 4px rgba(212, 162, 47, 0.6);
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
+.px-close:hover {
+  background: #2a2010;
+  color: var(--accent);
+}
+.px-close:active {
+  background: #3a2c12;
+}
+/* Status-bar toggle */
+.px-toggle {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  color: #a1a1aa;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 10px;
+  cursor: pointer;
+}
+.px-toggle:hover {
+  color: #e4e4e7;
+}
+.px-link {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  cursor: pointer;
+  transition: color 120ms ease;
+}
+.px-link:hover {
+  color: #ffffff;
+}
+
+/* Dialog box (inside the world) ----------------------------------------- */
+.px-dialog {
+  position: relative;
+  padding: 14px 16px;
+  background: rgba(10, 10, 12, 0.9);
+  box-shadow:
+    0 0 0 2px #0a0a0b,
+    0 0 0 4px rgba(255, 255, 255, 0.55),
+    0 0 0 6px #0a0a0b;
+}
+@media (min-width: 768px) {
+  .px-dialog {
+    padding: 18px 22px;
+  }
+}
+.px-dialog--title {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 640px;
+}
+.px-title {
+  text-shadow:
+    2px 2px 0 #0a0a0b,
+    4px 4px 0 rgba(212, 162, 47, 0.28);
+}
+.px-newbest {
+  color: #f1cf6b;
+  animation: jarvis-blink 0.8s steps(2) infinite;
+}
+
+/* Pixel buttons (44px tall) ---------------------------------------------- */
+.px-btn {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #18181b;
+  color: #e4e4e7;
+  font-family: var(--font-geist-pixel-square), var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow:
+    0 0 0 2px #0a0a0b,
+    0 0 0 4px rgba(255, 255, 255, 0.4),
+    0 4px 0 4px #0a0a0b;
+  transition:
+    background-color 120ms ease,
+    transform 80ms ease,
+    box-shadow 80ms ease;
+}
+.px-btn:hover:not(:disabled) {
+  background: #232326;
+}
+.px-btn:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow:
+    0 0 0 2px #0a0a0b,
+    0 0 0 4px rgba(255, 255, 255, 0.4),
+    0 1px 0 4px #0a0a0b;
+}
+.px-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.px-btn--primary {
+  background: #2a2010;
+  color: var(--accent);
+  box-shadow:
+    0 0 0 2px #0a0a0b,
+    0 0 0 4px var(--accent),
+    0 4px 0 4px #0a0a0b;
+}
+.px-btn--primary:hover:not(:disabled) {
+  background: #3a2c12;
+}
+.px-btn--primary:active:not(:disabled) {
+  box-shadow:
+    0 0 0 2px #0a0a0b,
+    0 0 0 4px var(--accent),
+    0 1px 0 4px #0a0a0b;
+}
+/* Blinking menu cursor (▶) */
+.px-cursor {
+  display: inline-block;
+  font-size: 9px;
+  line-height: 1;
+  color: currentColor;
+  animation: px-cursor 1s steps(2) infinite;
+}
+.px-btn:not(.px-btn--primary) .px-cursor,
+.px-btn:disabled .px-cursor {
+  animation: none;
+}
+.px-cursor--trail {
+  animation: px-cursor-trail 0.9s steps(2) infinite;
+}
+@keyframes px-cursor {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+@keyframes px-cursor-trail {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(3px);
+  }
+}
+
+/* Answer menu ------------------------------------------------------------ */
+.px-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 6px 2px 4px;
+}
+.px-menu__item {
+  display: flex;
+  width: 100%;
+  min-height: 44px;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px 8px 8px;
+  background: #121215;
+  color: #e4e4e7;
+  font-family: var(--font-geist-pixel-square), var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 13px;
+  line-height: 1.45;
+  text-align: left;
+  cursor: pointer;
+  box-shadow:
+    0 0 0 2px #0a0a0b,
+    0 0 0 3px rgba(255, 255, 255, 0.2);
+  transition:
+    background-color 120ms ease,
+    box-shadow 120ms ease,
+    color 120ms ease;
+}
+@media (min-width: 768px) {
+  .px-menu__item {
+    font-size: 14px;
+  }
+}
+.px-menu__item .px-cursor {
+  width: 9px;
+  opacity: 0;
+  animation: none;
+  color: var(--accent);
+}
+.px-menu__item:hover:not(:disabled),
+.px-menu__item:focus-visible {
+  background: #1b1810;
+  box-shadow:
+    0 0 0 2px #0a0a0b,
+    0 0 0 3px var(--accent);
+  outline: none;
+}
+/* keyboard focus gets an extra white outline so it is never ambiguous */
+.px-menu__item:focus-visible {
+  box-shadow:
+    0 0 0 2px #0a0a0b,
+    0 0 0 3px var(--accent),
+    0 0 0 6px #ffffff;
+}
+.px-menu__item:hover:not(:disabled) .px-cursor,
+.px-menu__item:focus-visible .px-cursor {
+  opacity: 1;
+  animation: px-cursor 0.8s steps(2) infinite;
+}
+.px-menu__item:disabled {
+  cursor: default;
+}
+.px-menu__key {
+  display: inline-flex;
+  height: 20px;
+  width: 20px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  background: #0a0a0b;
+  font-size: 10px;
+  color: #a1a1aa;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.25);
+}
+.px-menu__mark {
+  flex-shrink: 0;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+}
+.px-menu__item--correct {
+  background: #2a2010;
+  color: #fff;
+  box-shadow:
+    0 0 0 2px #0a0a0b,
+    0 0 0 3px var(--accent),
+    0 0 14px -2px rgba(212, 162, 47, 0.6);
+}
+.px-menu__item--correct .px-cursor {
+  opacity: 1;
+}
+.px-menu__item--correct .px-menu__key,
+.px-menu__item--correct .px-menu__mark {
+  color: var(--accent);
+}
+.px-menu__item--wrong {
+  background: #241012;
+  box-shadow:
+    0 0 0 2px #0a0a0b,
+    0 0 0 3px #f87171;
+  animation: px-shake 360ms ease;
+}
+.px-menu__item--wrong .px-menu__key,
+.px-menu__item--wrong .px-menu__mark {
+  color: #f87171;
+}
+.px-menu__item--dim {
+  color: #5f5f66;
+  background: #0e0e10;
+  box-shadow:
+    0 0 0 2px #0a0a0b,
+    0 0 0 3px rgba(255, 255, 255, 0.08);
+}
+.px-menu__item--dim .px-menu__key {
+  color: #4a4a52;
+}
+@keyframes px-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-3px);
+  }
+  75% {
+    transform: translateX(3px);
+  }
+}
+
+/* Feedback box ------------------------------------------------------------ */
+.px-feedback {
+  padding: 10px 12px;
+  background: #101013;
+  animation: px-pop-in 160ms steps(2) both;
+}
+.px-feedback--correct {
+  color: var(--accent);
+  box-shadow:
+    0 0 0 2px #0a0a0b,
+    0 0 0 4px var(--accent);
+}
+.px-feedback--wrong {
+  color: #f87171;
+  box-shadow:
+    0 0 0 2px #0a0a0b,
+    0 0 0 4px #f87171;
+}
+@keyframes px-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Rank badge -------------------------------------------------------------- */
+.px-rank {
+  display: inline-flex;
+  height: 60px;
+  width: 60px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  background: #0a0a0b;
+  font-size: 32px;
+  line-height: 1;
+  color: var(--accent);
+  box-shadow:
+    0 0 0 2px #0a0a0b,
+    0 0 0 4px var(--accent),
+    0 0 0 6px #0a0a0b;
+  text-shadow: 2px 2px 0 rgba(212, 162, 47, 0.3);
+  animation: px-rank-in 420ms cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+.px-rank[data-rank="S"] {
+  background: #2a2010;
+  box-shadow:
+    0 0 0 2px #0a0a0b,
+    0 0 0 4px var(--accent),
+    0 0 0 6px #0a0a0b,
+    0 0 24px rgba(212, 162, 47, 0.5);
+}
+.px-rank[data-rank="C"],
+.px-rank[data-rank="D"] {
+  color: #a1a1aa;
+  box-shadow:
+    0 0 0 2px #0a0a0b,
+    0 0 0 4px rgba(255, 255, 255, 0.35),
+    0 0 0 6px #0a0a0b;
+  text-shadow: none;
+}
+@keyframes px-rank-in {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* ==========================================================================
+   Quiz HUD (QuizHud) — cabinet scoreboard
+   ========================================================================== */
+.qh {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 8px 12px;
+  padding: 8px 14px;
+  background: rgba(10, 10, 12, 0.88);
+  box-shadow:
+    0 0 0 2px #0a0a0b,
+    0 0 0 4px rgba(212, 162, 47, 0.6),
+    inset 0 -2px 0 rgba(212, 162, 47, 0.12);
+  font-family: var(--font-geist-pixel-square), var(--font-geist-mono), ui-monospace, monospace;
+  text-transform: uppercase;
+}
+.qh-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.qh-cell--center {
+  align-items: center;
+  text-align: center;
+}
+.qh-cell--end {
+  align-items: flex-end;
+  text-align: right;
+}
+.qh-label {
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: #8a8a93;
+}
+.qh-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--accent);
+  text-shadow: 1px 1px 0 #0a0a0b;
+}
+@media (min-width: 768px) {
+  .qh-value {
+    font-size: 18px;
+  }
+}
+.qh-dim {
+  color: #6b6b73;
+}
+.qh-value--streak[data-hot="true"] {
+  color: #f1cf6b;
+  animation: qh-hot 0.9s steps(2) infinite;
+}
+@keyframes qh-hot {
+  0%,
+  100% {
+    text-shadow: 1px 1px 0 #0a0a0b;
+  }
+  50% {
+    text-shadow:
+      1px 1px 0 #0a0a0b,
+      0 0 8px rgba(241, 207, 107, 0.8);
+  }
+}
+.qh-flame {
+  width: 9px;
+  height: 12px;
+  transform-origin: 50% 100%;
+}
+.qh-flame__outer {
+  fill: #4a4a52;
+}
+.qh-flame__core {
+  fill: #2a2a30;
+}
+.qh-flame[data-tier="1"] .qh-flame__outer,
+.qh-flame[data-tier="2"] .qh-flame__outer {
+  fill: #f2a33a;
+}
+.qh-flame[data-tier="1"] .qh-flame__core,
+.qh-flame[data-tier="2"] .qh-flame__core {
+  fill: #fff1b8;
+}
+.qh-flame[data-tier="2"],
+.qh-flame[data-tier="3"] {
+  animation: qh-flame 0.4s steps(2) infinite;
+}
+.qh-flame[data-tier="3"] .qh-flame__outer {
+  fill: #f1cf6b;
+}
+.qh-flame[data-tier="3"] .qh-flame__core {
+  fill: #ffffff;
+}
+.qh-flame[data-tier="3"] {
+  transform: scale(1.25);
+}
+@keyframes qh-flame {
+  0%,
+  100% {
+    transform: scaleY(1);
+  }
+  50% {
+    transform: scaleY(1.18);
+  }
+}
+
+/* ==========================================================================
+   The world (QuizWorld) — dusk sky, pixel city, ground, training path
+   ========================================================================== */
+.qw {
+  position: relative;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  /* room for the path + ground at the bottom */
+  padding: 12px 12px 124px;
+  background: linear-gradient(180deg, #07080e 0%, #0d0c1d 38%, #1c1330 72%, #3a2336 92%, #4a2a33 100%);
+}
+@media (min-width: 768px) {
+  .qw {
+    padding: 16px 20px 140px;
+  }
+}
+.qw-scene {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.qw-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 12px;
+}
+.qw-dialog-area {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+}
+/* brief red warning on a miss: the frame edges only, no full-screen flash */
+.qw[data-feedback="wrong"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  animation: qw-warn-edge 600ms ease-out both;
+}
+@keyframes qw-warn-edge {
+  0% {
+    box-shadow: inset 0 0 0 4px rgba(248, 113, 113, 0.7);
+  }
+  100% {
+    box-shadow: inset 0 0 0 0 rgba(248, 113, 113, 0);
+  }
+}
+.qw-stars {
+  position: absolute;
+  inset: 0 0 40% 0;
+  background-image:
+    radial-gradient(rgba(255, 255, 255, 0.75) 1px, transparent 1px),
+    radial-gradient(rgba(212, 162, 47, 0.6) 1px, transparent 1px),
+    radial-gradient(rgba(255, 255, 255, 0.35) 1px, transparent 1px);
+  background-size:
+    97px 71px,
+    131px 89px,
+    167px 103px;
+  background-position:
+    6px 4px,
+    50px 30px,
+    90px 12px;
+  animation: qt-twinkle 3s steps(2) infinite;
+}
+@keyframes qt-twinkle {
+  0%,
+  100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+/* Pixel clouds drawn with box-shadow, drifting slowly; two depths */
+.qw-clouds {
+  position: absolute;
+  left: 0;
+  width: 8px;
+  height: 4px;
+  background: transparent;
+}
+.qw-clouds--far {
+  top: 10%;
+  box-shadow:
+    40px 0 0 4px #1a1730,
+    52px -4px 0 4px #1a1730,
+    64px 0 0 4px #1a1730,
+    360px 22px 0 4px #181530,
+    372px 18px 0 4px #181530,
+    388px 22px 0 4px #181530,
+    400px 22px 0 4px #181530,
+    720px 6px 0 4px #1a1730,
+    736px 2px 0 4px #1a1730,
+    748px 6px 0 4px #1a1730;
+  animation: qt-drift 120s linear infinite;
+}
+.qw-clouds--near {
+  top: 24%;
+  box-shadow:
+    200px 0 0 6px #261d3c,
+    216px -6px 0 6px #261d3c,
+    232px -2px 0 6px #261d3c,
+    248px 0 0 6px #261d3c,
+    600px 30px 0 6px #241b3a,
+    616px 24px 0 6px #241b3a,
+    636px 30px 0 6px #241b3a,
+    950px 10px 0 6px #261d3c,
+    966px 6px 0 6px #261d3c,
+    982px 10px 0 6px #261d3c;
+  animation: qt-drift 80s linear infinite;
+}
+@keyframes qt-drift {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-320px);
+  }
+}
+/* City: far layer small and dark, near layer with lit windows; both shift a
+   little as the run progresses (parallax) */
+.qw-skyline {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  bottom: 24px; /* ground height */
+  transition: transform 620ms cubic-bezier(0.3, 0.7, 0.25, 1);
+}
+.qw-skyline--far {
+  height: 150px;
+  opacity: 0.85;
+  transform: translateX(calc(var(--progress, 0) * -12px));
+}
+.qw-skyline--near {
+  height: 120px;
+  transform: translateX(calc(var(--progress, 0) * -36px));
+}
+.qw-skyline--far .qw-building {
+  fill: #171427;
+}
+.qw-skyline--near .qw-building {
+  fill: #0e0d18;
+}
+.qw-skyline--near .qw-building--tower {
+  fill: #14111f;
+}
+.qw-window {
+  fill: rgba(241, 207, 107, 0.32);
+}
+.qw-skyline--far .qw-window {
+  fill: rgba(241, 207, 107, 0.18);
+}
+.qw-antenna {
+  fill: #d4a22f;
+}
+.qw-antenna--tip {
+  animation: jarvis-blink 1.6s steps(2) infinite;
+}
+.qw-tower-sign {
+  fill: #d4a22f;
+  opacity: 0.9;
+}
+.qw-ground {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 24px;
+  background-color: #2a1f14;
+  background-image:
+    linear-gradient(180deg, #5b4320 0 3px, #3d2d15 3px 6px, transparent 6px),
+    repeating-linear-gradient(90deg, transparent 0 15px, rgba(0, 0, 0, 0.35) 15px 16px),
+    repeating-linear-gradient(180deg, transparent 0 11px, rgba(0, 0, 0, 0.35) 11px 12px);
+  border-top: 2px solid var(--accent);
+}
+/* path sits on the ground */
+.qw-path {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 24px;
+  height: 78px;
+  z-index: 1;
+  /* darker street band so flags and the runner read against the city */
+  background: linear-gradient(180deg, transparent 0, rgba(6, 7, 12, 0.55) 55%, rgba(6, 7, 12, 0.75) 100%);
+}
+
+/* Checkpoint flags, gate and runner (shared with the old strip names) */
+.qt-start {
+  position: absolute;
+  bottom: 0;
+  width: 2px;
+  height: 10px;
+  margin-left: -1px;
+  background: rgba(255, 255, 255, 0.4);
+}
+.qt-node {
+  position: absolute;
+  bottom: 0;
+  width: 2px;
+  height: 20px;
+  margin-left: -1px;
+  background: #4a4a52;
+  transition: background-color 200ms ease;
+}
+.qt-node::after {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 0;
+  width: 8px;
+  height: 6px;
+  background: #3a3a42;
+  transition:
+    background-color 200ms ease,
+    transform 200ms ease;
+}
+.qt-node[data-state="current"] {
+  background: #a1a1aa;
+}
+.qt-node[data-state="current"]::after {
+  background: #e4e4e7;
+  animation: qt-flag-wave 0.6s steps(2) infinite;
+}
+@keyframes qt-flag-wave {
+  0%,
+  100% {
+    transform: scaleY(1);
+  }
+  50% {
+    transform: scaleY(0.7);
+  }
+}
+.qt-node[data-state="correct"] {
+  background: var(--accent);
+  box-shadow: 0 0 6px rgba(212, 162, 47, 0.6);
+}
+.qt-node[data-state="correct"]::after {
+  background: var(--accent);
+}
+.qt-node[data-state="wrong"] {
+  background: #7f1d1d;
+  transform: rotate(14deg);
+  transform-origin: 50% 100%;
+}
+.qt-node[data-state="wrong"]::after {
+  background: #f87171;
+}
+.qt-finish {
+  position: absolute;
+  bottom: 0;
+  margin-left: 14px; /* clear of the runner on the last checkpoint */
+}
+@media (min-width: 768px) {
+  .qt-finish {
+    margin-left: 22px;
+  }
+}
+.qt-finish__post {
+  display: block;
+  width: 3px;
+  height: 34px;
+  background: var(--accent);
+}
+.qt-finish__sign {
+  position: absolute;
+  left: -9px;
+  top: -8px;
+  display: inline-flex;
+  height: 18px;
+  width: 20px;
+  align-items: center;
+  justify-content: center;
+  background: #0a0a0b;
+  color: var(--accent);
+  font-family: var(--font-geist-pixel-square), ui-monospace, monospace;
+  font-size: 12px;
+  line-height: 1;
+  box-shadow:
+    0 0 0 2px var(--accent),
+    0 0 10px rgba(212, 162, 47, 0.5);
+}
+.qw[data-finished="true"] .qt-finish__sign {
+  animation: qt-sign 0.7s steps(2) infinite;
+}
+@keyframes qt-sign {
+  0%,
+  100% {
+    background: #0a0a0b;
+    color: var(--accent);
+  }
+  50% {
+    background: var(--accent);
+    color: #0a0a0b;
+  }
+}
+.qt-sprite {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 28px;
+  height: 48px;
+  transition: transform 620ms cubic-bezier(0.3, 0.7, 0.25, 1);
+  will-change: transform;
+}
+/* No slide-in from x=0 before the path has been measured */
+.qw[data-measured="false"] .qt-sprite {
+  transition: none;
+  visibility: hidden;
+}
+/* after a miss: shake first, then trudge forward */
+.qw[data-feedback="wrong"] .qt-sprite {
+  transition-delay: 480ms;
+  transition-duration: 900ms;
+  transition-timing-function: linear;
+}
+.qt-sprite__anim {
+  width: 100%;
+  height: 100%;
+  transform-origin: 50% 100%;
+}
+.qt-sprite__img {
+  display: block;
+  width: 28px;
+  height: 48px;
+}
+.qt-sprite[data-state="preview"] .qt-sprite__anim,
+.qt-sprite[data-state="run"] .qt-sprite__anim {
+  animation: companion-hover 2.6s ease-in-out infinite;
+}
+/* correct: hop forward with a thruster burst */
+.qw[data-feedback="correct"] .qt-sprite__anim {
+  animation: qt-hop 620ms cubic-bezier(0.3, 0.7, 0.25, 1);
+}
+.qw[data-feedback="correct"] .px-flames {
+  transform: scaleY(1.7);
+}
+@keyframes qt-hop {
+  0% {
+    transform: translateY(0) scale(1, 1);
+  }
+  15% {
+    transform: translateY(2px) scale(1.1, 0.9);
+  }
+  55% {
+    transform: translateY(-24px) scale(0.95, 1.05);
+  }
+  85% {
+    transform: translateY(0) scale(1.08, 0.92);
+  }
+  100% {
+    transform: translateY(0) scale(1, 1);
+  }
+}
+/* wrong: short shake, eyes dim for a beat */
+.qw[data-feedback="wrong"] .qt-sprite__anim {
+  animation: qt-stumble 480ms ease-in-out;
+}
+.qw[data-feedback="wrong"] .px-eyes {
+  animation: companion-blink 480ms steps(1);
+}
+@keyframes qt-stumble {
+  0%,
+  100% {
+    transform: translateX(0) rotate(0);
+  }
+  20% {
+    transform: translateX(-3px) rotate(-6deg);
+  }
+  40% {
+    transform: translateX(3px) rotate(6deg);
+  }
+  60% {
+    transform: translateX(-2px) rotate(-4deg);
+  }
+  80% {
+    transform: translateX(2px) rotate(3deg);
+  }
+}
+/* finished: celebratory double hop */
+.qw[data-finished="true"] .qt-sprite__anim {
+  animation: qt-cheer 1.6s ease-in-out infinite;
+}
+@keyframes qt-cheer {
+  0%,
+  40%,
+  100% {
+    transform: translateY(0);
+  }
+  20% {
+    transform: translateY(-10px);
+  }
+  60% {
+    transform: translateY(-6px);
+  }
+}
+/* "+100" popup and sparks */
+.qt-pop {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  transform: translateX(-50%);
+  font-family: var(--font-geist-pixel-square), ui-monospace, monospace;
+  font-size: 12px;
+  color: #f1cf6b;
+  text-shadow: 1px 1px 0 #0a0a0b;
+  white-space: nowrap;
+  animation: qt-pop 900ms ease-out both;
+}
+@keyframes qt-pop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 6px);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -18px);
+  }
+}
+.qt-sparks {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.qt-sparks i {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background: #f1cf6b;
+  animation: qt-spark 560ms ease-out both;
+}
+.qt-sparks i:nth-child(1) {
+  --dx: -16px;
+  --dy: -14px;
+}
+.qt-sparks i:nth-child(2) {
+  --dx: 16px;
+  --dy: -12px;
+}
+.qt-sparks i:nth-child(3) {
+  --dx: -12px;
+  --dy: 6px;
+  animation-delay: 60ms;
+}
+.qt-sparks i:nth-child(4) {
+  --dx: 14px;
+  --dy: 8px;
+  animation-delay: 60ms;
+}
+@keyframes qt-spark {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx), var(--dy));
+  }
+}
+/* red "!" over the head on a miss */
+.qt-warn {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 2px);
+  transform: translateX(-50%);
+  display: inline-flex;
+  height: 14px;
+  width: 10px;
+  align-items: center;
+  justify-content: center;
+  background: #f87171;
+  color: #0a0a0b;
+  font-family: var(--font-geist-pixel-square), ui-monospace, monospace;
+  font-size: 11px;
+  line-height: 1;
+  box-shadow: 0 0 0 1px #0a0a0b;
+  animation: qt-warn 1.1s steps(1) both;
+}
+@keyframes qt-warn {
+  0%,
+  30%,
+  60% {
+    opacity: 1;
+  }
+  15%,
+  45% {
+    opacity: 0.25;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Short viewports (landscape phones): slimmer scene so the dialog fits */
+@media (max-height: 480px) {
+  .qw {
+    padding-bottom: 96px;
+  }
+  .qw-path {
+    height: 60px;
+  }
+  .qw-skyline--near {
+    height: 80px;
+  }
+  .qw-skyline--far {
+    height: 100px;
+  }
+}
+
+/* Reduced motion: the global rule collapses every animation/transition;
+   positions, flag colours and HUD values carry the state on their own. */
